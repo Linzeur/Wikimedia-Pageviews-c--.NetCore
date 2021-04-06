@@ -13,7 +13,7 @@ namespace ViewCounter
         static void Main(string[] args)
         {
             WebClient Client = new WebClient();
-            DateTime currentDateTime = DateTime.Now;
+            DateTime currentDateTime = DateTime.Now.AddHours(-5);
             string destinyFolder = @"D:\Training and Practices Developer\Challenges - Interviews\";
             /*for (int i = 1; i <= 5; i++)
             {*/
@@ -44,7 +44,7 @@ namespace ViewCounter
             }
 
 
-            List<Domains> listDomains = new List<Domains>();
+            List<Domain> listDomains = new List<Domain>();
             using (StreamReader sw = new StreamReader(descompressedFile))
             {
                 string line = sw.ReadLine();
@@ -52,7 +52,7 @@ namespace ViewCounter
 
                 string domainCode = fields[0];
                 int viewCount = int.Parse(fields[2]);
-                Domains domain = new Domains(domainCode, viewCount);
+                Domain domain = new Domain(domainCode, viewCount);
                 listDomains.Add(domain);
 
                 while (!sw.EndOfStream)
@@ -68,20 +68,49 @@ namespace ViewCounter
                         listDomains[lastIndex].viewCount += viewCount;
                     else
                     {
-                        domain = new Domains(domainCode, viewCount);
+                        domain = new Domain(domainCode, viewCount);
                         listDomains.Add(domain);
                     }
                 }
             }
 
-            Domains domainMaxViewCount = listDomains.OrderByDescending(domain => domain.viewCount).ElementAt(0);
+            Domain domainMaxViewCount = listDomains.OrderByDescending(domain => domain.viewCount).ElementAt(0);
+            listDomains.Clear();
             Console.WriteLine("Result: " + domainMaxViewCount.domainCode + "  -  " + domainMaxViewCount.viewCount);
+
+
+            Dictionary<string, Page> dictionaryPages = new Dictionary<string, Page>();
+            using (StreamReader sw = new StreamReader(descompressedFile))
+            {
+                while (!sw.EndOfStream)
+                {
+                    string line = sw.ReadLine();
+                    string[] fields = line.Split(" ");
+
+                    string pageTitle = fields[1];
+                    int viewCount = int.Parse(fields[2]);
+
+                    //int index = dictionaryPages.(page => page.title == pageTitle);
+                    if (dictionaryPages.ContainsKey(pageTitle))
+                        dictionaryPages[pageTitle].viewCount += viewCount;
+                    else
+                        dictionaryPages.Add(pageTitle, new Page(pageTitle, viewCount));
+                    
+
+                }
+            }
+            
+            Page pageMaxViewCount = dictionaryPages.OrderByDescending(page => page.Value.viewCount).First().Value;
+            dictionaryPages.Clear();
+            Console.WriteLine("Result: " + pageMaxViewCount.title + "  -  " + pageMaxViewCount.viewCount);
+
+
             Console.ReadKey();
 
             /*currentDateTime.AddHours(-1);
         }*/
 
-
+        }
         
     }
 }

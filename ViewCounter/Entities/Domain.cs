@@ -1,11 +1,11 @@
 ﻿namespace ViewCounter.Entities
 {
-    public class Domains
+    public class Domain
     {
         public string domainCode { get; set; }
         public int viewCount { get; set; }
 
-        public Domains(string domainCode, int viewCount)
+        public Domain(string domainCode, int viewCount)
         {
             this.domainCode = domainCode;
             this.viewCount = viewCount;
