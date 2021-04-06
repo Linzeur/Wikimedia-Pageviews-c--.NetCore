@@ -43,10 +43,45 @@ namespace ViewCounter
                 }
             }
 
+
+            List<Domains> listDomains = new List<Domains>();
+            using (StreamReader sw = new StreamReader(descompressedFile))
+            {
+                string line = sw.ReadLine();
+                string[] fields = line.Split(" ");
+
+                string domainCode = fields[0];
+                int viewCount = int.Parse(fields[2]);
+                Domains domain = new Domains(domainCode, viewCount);
+                listDomains.Add(domain);
+
+                while (!sw.EndOfStream)
+                {
+                    line = sw.ReadLine();
+                    fields = line.Split(" ");
+
+                    domainCode = fields[0];
+                    viewCount = int.Parse(fields[2]);
+
+                    int lastIndex = listDomains.Count - 1;
+                    if (domainCode == listDomains[lastIndex].domainCode)
+                        listDomains[lastIndex].viewCount += viewCount;
+                    else
+                    {
+                        domain = new Domains(domainCode, viewCount);
+                        listDomains.Add(domain);
+                    }
+                }
+            }
+
+            Domains domainMaxViewCount = listDomains.OrderByDescending(domain => domain.viewCount).ElementAt(0);
+            Console.WriteLine("Result: " + domainMaxViewCount.domainCode + "  -  " + domainMaxViewCount.viewCount);
+            Console.ReadKey();
+
             /*currentDateTime.AddHours(-1);
         }*/
 
 
-        }
+        
     }
 }
