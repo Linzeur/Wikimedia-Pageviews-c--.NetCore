@@ -70,37 +70,51 @@ namespace ViewCounter.Services
 
         public void DownloadAllFiles()
         {
-            DateTime currentTime = DateTime.Now;
-            string finalDateTime = currentTime.ToString("yyyyMMdd_HH00");
-            string initialDateTime = currentTime.AddHours(_numberFilesToDownload * -1).ToString("yyyyMMdd_HH00");
-            string directoryDestination = Path.Combine(_baseDirectory, string.Format("Dumps Wikimedia Files {0} to {1}", initialDateTime, finalDateTime));
-
-            directoryDestinationInfo = new DirectoryInfo(directoryDestination);
-            if (!directoryDestinationInfo.Exists || directoryDestinationInfo.EnumerateFiles().ToList().Count != _numberFilesToDownload)
+            try
             {
-                Console.WriteLine("Initialize download files from last " + _numberFilesToDownload + " hours");
-                Console.WriteLine();
-                directoryDestinationInfo.Create();
-                for (int i = 1; i <= _numberFilesToDownload; i++)
+                DateTime currentTime = DateTime.Now;
+                string finalDateTime = currentTime.ToString("yyyyMMdd_HH00");
+                string initialDateTime = currentTime.AddHours(_numberFilesToDownload * -1).ToString("yyyyMMdd_HH00");
+                string directoryDestination = Path.Combine(_baseDirectory, string.Format("Dumps Wikimedia Files {0} to {1}", initialDateTime, finalDateTime));
+
+                directoryDestinationInfo = new DirectoryInfo(directoryDestination);
+                if (!directoryDestinationInfo.Exists || directoryDestinationInfo.EnumerateFiles().ToList().Count != _numberFilesToDownload)
                 {
-                    DownloadFile(currentTime);
-                    DecompressFile(currentTime);
-                    currentTime = currentTime.AddHours(-1);
+                    Console.WriteLine("Initialize download files from last " + _numberFilesToDownload + " hours");
+                    Console.WriteLine();
+                    directoryDestinationInfo.Create();
+                    for (int i = 1; i <= _numberFilesToDownload; i++)
+                    {
+                        DownloadFile(currentTime);
+                        DecompressFile(currentTime);
+                        currentTime = currentTime.AddHours(-1);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Files already downloaded and decompressed from the last " + _numberFilesToDownload + " hours");
+                    Console.WriteLine();
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Files already downloaded and decompressed from the last " + _numberFilesToDownload + " hours");
-                Console.WriteLine();
+                CustomLog.WriteLog(ex.Message, ex.StackTrace);
             }
         }
 
         public void DeleteAllFiles()
         {
-            Console.WriteLine("Deleting all files");
-            if (directoryDestinationInfo.Exists) directoryDestinationInfo.Delete(true);
-            Console.WriteLine("All files was deleted successfully");
-            Console.WriteLine();
+            try
+            {
+                Console.WriteLine("Deleting all files");
+                if (directoryDestinationInfo.Exists) directoryDestinationInfo.Delete(true);
+                Console.WriteLine("All files was deleted successfully");
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                CustomLog.WriteLog(ex.Message, ex.StackTrace);
+            }
         }
     }
 }
