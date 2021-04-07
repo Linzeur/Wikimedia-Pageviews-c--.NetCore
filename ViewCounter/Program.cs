@@ -10,19 +10,31 @@ namespace ViewCounter
 
         static void Main(string[] args)
         {
-            var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
-            var config = builder.Build();
-            string basePath = config["FilesToDownload:PathToStore"].ToString();
-            int numberFilesToDownload = int.Parse(config["FilesToDownload:NumberLastHours"]);
+            try
+            {
+                var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
+                var config = builder.Build();
+                string basePath = config["FilesToDownload:PathToStore"].ToString();
+                int numberFilesToDownload = int.Parse(config["FilesToDownload:NumberLastHours"]);
 
-            Console.WriteLine("Application Started");
-            Console.WriteLine();
+                string logFolderPath = config["Logs:PathToStore"].ToString();
+                CustomLog.folderPath = logFolderPath;
 
-            DumpWikimediaFiles dumpWikimediaFiles = new DumpWikimediaFiles(basePath, numberFilesToDownload);
-            dumpWikimediaFiles.DownloadAllFiles();
+                Console.WriteLine("Application Started");
+                Console.WriteLine();
+                
+                DumpWikimediaFiles dumpWikimediaFiles = new DumpWikimediaFiles(basePath, numberFilesToDownload);
+                dumpWikimediaFiles.DownloadAllFiles();
 
-            DisplayHeaderProgram();
-            DisplayOptionsProgram(dumpWikimediaFiles);
+                DisplayHeaderProgram();
+                DisplayOptionsProgram(dumpWikimediaFiles);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Verify if the configuration file exist or have the right values");
+                Console.ReadKey();
+            }
 
         }
 
