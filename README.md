@@ -1,4 +1,4 @@
-# Getting started
+# Info
 
 This is an console application and it was done in Visual Studio 2017 using .Net Core
 
