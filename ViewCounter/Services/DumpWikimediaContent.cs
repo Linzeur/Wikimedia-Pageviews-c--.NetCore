@@ -34,37 +34,36 @@ namespace ViewCounter.Services
 
         private void GetMaxViewCountByDomainAndLanguage(int[] sizeColumns, string fullPath, string fileName)
         {
-            List<Domain> listDomains = new List<Domain>();
+            Domain domainMaxViewCount = null;
+            Domain tempDomain = null;
+
             using (StreamReader sw = new StreamReader(fullPath))
             {
-                string line = sw.ReadLine();
-                string[] fields = line.Split(" ");
-
-                string domainCode = fields[0];
-                int viewCount = int.Parse(fields[2]);
-                Domain domain = new Domain(domainCode, viewCount);
-                listDomains.Add(domain);
 
                 while (!sw.EndOfStream)
                 {
-                    line = sw.ReadLine();
-                    fields = line.Split(" ");
+                    string line = sw.ReadLine();
+                    string[] fields = line.Split(" ");
 
-                    domainCode = fields[0];
-                    viewCount = int.Parse(fields[2]);
+                    string domainCode = fields[0];
+                    int viewCount = int.Parse(fields[2]);
 
-                    int lastIndex = listDomains.Count - 1;
-                    if (domainCode == listDomains[lastIndex].domainCode)
-                        listDomains[lastIndex].viewCount += viewCount;
+                    if (tempDomain == null)
+                        tempDomain = new Domain(domainCode, viewCount);
                     else
                     {
-                        domain = new Domain(domainCode, viewCount);
-                        listDomains.Add(domain);
+                        if (domainCode == tempDomain.domainCode)
+                            tempDomain.viewCount += viewCount;
+                        else
+                        {
+                            if (domainMaxViewCount == null || tempDomain.viewCount > domainMaxViewCount.viewCount)
+                                domainMaxViewCount = new Domain(tempDomain.domainCode, tempDomain.viewCount);
+                            else
+                                tempDomain = new Domain(domainCode, viewCount);
+                        }
                     }
                 }
             }
-            Domain domainMaxViewCount = listDomains.OrderByDescending(val => val.viewCount).ElementAt(0);
-            listDomains.Clear();
             string[] columns = new string[4];
             columns[0] = (fileName.Substring(9, 2) + "hrs").PadRight(sizeColumns[0]);
 
