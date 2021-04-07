@@ -60,8 +60,7 @@ namespace ViewCounter.Services
             if (fileInfo.Exists) fileInfo.Delete();
 
             Console.WriteLine("File decompressed");
-            Console.WriteLine("==========");
-            Console.WriteLine("");
+            Console.WriteLine();
         }
     }
 }
