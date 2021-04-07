@@ -1,116 +1,102 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Net;
-using ViewCounter.Entities;
+﻿using Microsoft.Extensions.Configuration;
+using System;
+using ViewCounter.Services;
 
 namespace ViewCounter
 {
     class Program
     {
+        public static int MAX_LENGTH_CHARACTER_BY_LINE = 78;
+
         static void Main(string[] args)
         {
-            WebClient Client = new WebClient();
-            DateTime currentDateTime = DateTime.Now.AddHours(-5);
-            string destinyFolder = @"D:\Training and Practices Developer\Challenges - Interviews\";
-            /*for (int i = 1; i <= 5; i++)
-            {*/
-            string currentYear = currentDateTime.Year.ToString();
-            string currentYearMonth = currentDateTime.ToString("yyyy-MM");
-            string currentTime = currentDateTime.ToString("yyyyMMdd-HH0000");
-            string URL = string.Format("https://dumps.wikimedia.org/other/pageviews/{0}/{1}/pageviews-{2}.gz", currentYear, currentYearMonth, currentTime);
-            Console.WriteLine("Descagando Archivo");
-            string downloadedFile = destinyFolder + currentTime + ".gz";
-            Client.DownloadFile(URL, downloadedFile);
+            var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
+            var config = builder.Build();
+            string basePath = config["FilesToDownload:PathToStore"].ToString();
+            int numberFilesToDownload = int.Parse(config["FilesToDownload:NumberLastHours"]);
 
-            Console.WriteLine("Descromprimiendo Archivo");
-            string descompressedFile = destinyFolder + currentTime + ".txt";
-            using (FileStream fInStream = new FileStream(downloadedFile, FileMode.Open, FileAccess.Read))
-            {
-                using (GZipStream zipStream = new GZipStream(fInStream, CompressionMode.Decompress))
-                {
-                    using (FileStream fOutStream = new FileStream(descompressedFile, FileMode.Create, FileAccess.Write))
-                    {
-                        byte[] tempBytes = new byte[4096];
-                        int descompressedBytes = 0;
-                        while ((descompressedBytes = zipStream.Read(tempBytes, 0, tempBytes.Length)) != 0)
-                        {
-                            fOutStream.Write(tempBytes, 0, descompressedBytes);
-                        }
-                    }
-                }
-            }
+            Console.WriteLine("Application Started");
+            Console.WriteLine();
 
+            DumpWikimediaFiles dumpWikimediaFiles = new DumpWikimediaFiles(basePath, numberFilesToDownload);
+            dumpWikimediaFiles.DownloadAllFiles();
 
-            List<Domain> listDomains = new List<Domain>();
-            using (StreamReader sw = new StreamReader(descompressedFile))
-            {
-                string line = sw.ReadLine();
-                string[] fields = line.Split(" ");
-
-                string domainCode = fields[0];
-                int viewCount = int.Parse(fields[2]);
-                Domain domain = new Domain(domainCode, viewCount);
-                listDomains.Add(domain);
-
-                while (!sw.EndOfStream)
-                {
-                    line = sw.ReadLine();
-                    fields = line.Split(" ");
-
-                    domainCode = fields[0];
-                    viewCount = int.Parse(fields[2]);
-
-                    int lastIndex = listDomains.Count - 1;
-                    if (domainCode == listDomains[lastIndex].domainCode)
-                        listDomains[lastIndex].viewCount += viewCount;
-                    else
-                    {
-                        domain = new Domain(domainCode, viewCount);
-                        listDomains.Add(domain);
-                    }
-                }
-            }
-
-            Domain domainMaxViewCount = listDomains.OrderByDescending(domain => domain.viewCount).ElementAt(0);
-            listDomains.Clear();
-            Console.WriteLine("Result: " + domainMaxViewCount.domainCode + "  -  " + domainMaxViewCount.viewCount);
-
-
-            Dictionary<string, Page> dictionaryPages = new Dictionary<string, Page>();
-            using (StreamReader sw = new StreamReader(descompressedFile))
-            {
-                while (!sw.EndOfStream)
-                {
-                    string line = sw.ReadLine();
-                    string[] fields = line.Split(" ");
-
-                    string pageTitle = fields[1];
-                    int viewCount = int.Parse(fields[2]);
-
-                    //int index = dictionaryPages.(page => page.title == pageTitle);
-                    if (dictionaryPages.ContainsKey(pageTitle))
-                        dictionaryPages[pageTitle].viewCount += viewCount;
-                    else
-                        dictionaryPages.Add(pageTitle, new Page(pageTitle, viewCount));
-                    
-
-                }
-            }
-            
-            Page pageMaxViewCount = dictionaryPages.OrderByDescending(page => page.Value.viewCount).First().Value;
-            dictionaryPages.Clear();
-            Console.WriteLine("Result: " + pageMaxViewCount.title + "  -  " + pageMaxViewCount.viewCount);
-
-
-            Console.ReadKey();
-
-            /*currentDateTime.AddHours(-1);
-        }*/
+            DisplayHeaderProgram();
+            DisplayOptionsProgram(dumpWikimediaFiles);
 
         }
-        
+
+        static void DisplayHeaderProgram()
+        {
+            Console.WriteLine(new string('*', MAX_LENGTH_CHARACTER_BY_LINE));
+            Console.Write("*");
+            Console.Write(new string(' ', MAX_LENGTH_CHARACTER_BY_LINE - 2));
+            Console.WriteLine("*");
+            string titleProgram = "Welcome to Analysis of Data for Pageview from Wikimedia Foundation";
+            Console.WriteLine(string.Format("*{0}{1}{0}*", new string(' ', 5), titleProgram));
+            Console.Write("*");
+            Console.Write(new string(' ', MAX_LENGTH_CHARACTER_BY_LINE - 2));
+            Console.WriteLine("*");
+            Console.WriteLine(new string('*', MAX_LENGTH_CHARACTER_BY_LINE));
+            Console.WriteLine();
+        }
+
+        static void DisplayOptionsProgram(DumpWikimediaFiles objDumpWikimediaFiles)
+        {
+            Console.WriteLine("List options to choose:");
+            Console.WriteLine("\t1: Display the max viewed count for language & domain by file");
+            Console.WriteLine("\t2: Display the max viewed count for page title by file");
+            Console.WriteLine("\t3: End application");
+            Console.WriteLine();
+            Console.Write("What option would you like to choose?: ");
+            string option = Console.ReadLine();
+            while (option != "1" && option != "2" && option != "3")
+            {
+                Console.Write("Invalid option. Please choose a valid option: ");
+                option = Console.ReadLine();
+            }
+            Console.WriteLine();
+            ActionsByOption(option, objDumpWikimediaFiles);
+        }
+
+        static void ActionsByOption(string option, DumpWikimediaFiles objDumpWikimediaFiles)
+        {
+            DumpWikimediaContent dumpWikimediaContent = new DumpWikimediaContent(objDumpWikimediaFiles.directoryDestinationInfo);
+
+            switch (option)
+            {
+                case "1":
+                    Console.WriteLine("Language & Domain count");
+                    Console.WriteLine(new string('=', MAX_LENGTH_CHARACTER_BY_LINE));
+                    dumpWikimediaContent.ReportViewCountByLanguageAndDomain();
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    DisplayOptionsProgram(objDumpWikimediaFiles);
+                    break;
+                case "2":
+                    Console.WriteLine("Language & Domain count");
+                    Console.WriteLine(new string('=', MAX_LENGTH_CHARACTER_BY_LINE));
+                    dumpWikimediaContent.ReportViewCountByPageTitle();
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    DisplayOptionsProgram(objDumpWikimediaFiles);
+                    break;
+                default:
+                    Console.Write("Do you like to keep all files downloaded (y/n)?: ");
+                    string answer = Console.ReadLine().ToLower();
+                    while (answer != "y" && answer != "n")
+                    {
+                        Console.Write("Invalid option. Do you like to delete all files downloaded (y/n)?: ");
+                        answer = Console.ReadLine().ToLower(); ;
+                    }
+                    if (answer == "n") objDumpWikimediaFiles.DeleteAllFiles();
+                    Console.WriteLine();
+                    Console.Write("Aplication Ended");
+                    break;
+
+            }
+        }
+
     }
+
 }
