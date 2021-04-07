@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
-using System.IO;
 using ViewCounter.Services;
 
 namespace ViewCounter
@@ -18,35 +17,15 @@ namespace ViewCounter
 
             Console.WriteLine("Application Started");
             Console.WriteLine();
-            DateTime currentTime = DateTime.Now;
-            string finalDateTime = currentTime.ToString("yyyyMMdd_HH00");
-            string initialDateTime = currentTime.AddHours(numberFilesToDownload * -1).ToString("yyyyMMdd_HH00");
-            string directoryDestination = Path.Combine(basePath, string.Format("Dumps Wikimedia Files {0} to {1}", initialDateTime, finalDateTime));
 
-            DirectoryInfo directoryInfo = new DirectoryInfo(path: directoryDestination);
-            if (!directoryInfo.Exists)
-            {
-                Console.WriteLine("Initialize download files from last " + numberFilesToDownload + " hours");
-                Console.WriteLine();
-                directoryInfo.Create();
-                for (int i = 1; i <= numberFilesToDownload; i++)
-                {
-                    DumpWikimediaFiles dumpWikimediaFiles = new DumpWikimediaFiles(directoryDestination, currentTime);
-                    dumpWikimediaFiles.DownloadFile();
-                    dumpWikimediaFiles.DecompressFile();
-                    currentTime = currentTime.AddHours(-1);
-                }
-            }
-            else
-            {
-                Console.WriteLine("Files already downloaded and decompressed from the last " + numberFilesToDownload + " hours");
-                Console.WriteLine();
-            }
+            DumpWikimediaFiles dumpWikimediaFiles = new DumpWikimediaFiles(basePath, numberFilesToDownload);
+            dumpWikimediaFiles.DownloadAllFiles();
 
             DisplayHeaderProgram();
-            DisplayOptionsProgram(directoryInfo);
+            DisplayOptionsProgram(dumpWikimediaFiles);
 
         }
+
         static void DisplayHeaderProgram()
         {
             Console.WriteLine(new string('*', MAX_LENGTH_CHARACTER_BY_LINE));
@@ -62,7 +41,7 @@ namespace ViewCounter
             Console.WriteLine();
         }
 
-        static void DisplayOptionsProgram(DirectoryInfo directory)
+        static void DisplayOptionsProgram(DumpWikimediaFiles objDumpWikimediaFiles)
         {
             Console.WriteLine("List options to choose:");
             Console.WriteLine("\t1: Display the max viewed count for language & domain by file");
@@ -77,12 +56,12 @@ namespace ViewCounter
                 option = Console.ReadLine();
             }
             Console.WriteLine();
-            ActionsByOption(option, directory);
+            ActionsByOption(option, objDumpWikimediaFiles);
         }
 
-        static void ActionsByOption(string option, DirectoryInfo directory)
+        static void ActionsByOption(string option, DumpWikimediaFiles objDumpWikimediaFiles)
         {
-            DumpWikimediaContent dumpWikimediaContent = new DumpWikimediaContent(directory);
+            DumpWikimediaContent dumpWikimediaContent = new DumpWikimediaContent(objDumpWikimediaFiles.directoryDestinationInfo);
 
             switch (option)
             {
@@ -92,7 +71,7 @@ namespace ViewCounter
                     dumpWikimediaContent.ReportViewCountByLanguageAndDomain();
                     Console.WriteLine();
                     Console.WriteLine();
-                    DisplayOptionsProgram(directory);
+                    DisplayOptionsProgram(objDumpWikimediaFiles);
                     break;
                 case "2":
                     Console.WriteLine("Language & Domain count");
@@ -100,7 +79,7 @@ namespace ViewCounter
                     dumpWikimediaContent.ReportViewCountByPageTitle();
                     Console.WriteLine();
                     Console.WriteLine();
-                    DisplayOptionsProgram(directory);
+                    DisplayOptionsProgram(objDumpWikimediaFiles);
                     break;
                 default:
                     Console.Write("Do you like to keep all files downloaded (y/n)?: ");
@@ -110,18 +89,14 @@ namespace ViewCounter
                         Console.Write("Invalid option. Do you like to delete all files downloaded (y/n)?: ");
                         answer = Console.ReadLine().ToLower(); ;
                     }
-                    if (answer == "n") Console.WriteLine("Deleting files");
+                    if (answer == "n") objDumpWikimediaFiles.DeleteAllFiles();
                     Console.WriteLine();
-                    Console.WriteLine();
-                    Console.Write("Please, press enter key to end program...");
-                    Console.ReadKey();
+                    Console.Write("Aplication Ended");
                     break;
 
             }
         }
 
     }
-
-
 
 }

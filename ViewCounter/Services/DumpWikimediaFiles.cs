@@ -1,30 +1,34 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 
 namespace ViewCounter.Services
 {
     public class DumpWikimediaFiles
     {
-        public string _directory;
-        public DateTime _dateTime;
+        private string _baseDirectory;
+        private int _numberFilesToDownload;
 
-        public DumpWikimediaFiles(string directory, DateTime dateTime)
+        public DirectoryInfo directoryDestinationInfo { get; set; }
+
+        public DumpWikimediaFiles(string baseDirectory, int numberFilesToDownload)
         {
-            this._directory = directory;
-            this._dateTime = dateTime;
+            _baseDirectory = baseDirectory;
+            _numberFilesToDownload = numberFilesToDownload;
         }
 
-        public void DownloadFile()
+
+        private void DownloadFile(DateTime dateTime)
         {
-            Console.WriteLine(string.Format("Downloading file with period {0}", _dateTime.ToString("yyyy-MM-dd HH:00")));
+            Console.WriteLine(string.Format("Downloading file with period {0}", dateTime.ToString("yyyy-MM-dd HH:00")));
 
-            string year = _dateTime.Year.ToString();
-            string yearMonth = _dateTime.ToString("yyyy-MM");
-            string fullDateTime = _dateTime.ToString("yyyyMMdd-HH0000");
+            string year = dateTime.Year.ToString();
+            string yearMonth = dateTime.ToString("yyyy-MM");
+            string fullDateTime = dateTime.ToString("yyyyMMdd-HH0000");
 
-            string downloadedFile = Path.Combine(_directory, fullDateTime + ".gz");
+            string downloadedFile = Path.Combine(directoryDestinationInfo.FullName, fullDateTime + ".gz");
 
             WebClient Client = new WebClient();
             string URL = string.Format("https://dumps.wikimedia.org/other/pageviews/{0}/{1}/pageviews-{2}.gz", year, yearMonth, fullDateTime);
@@ -33,12 +37,12 @@ namespace ViewCounter.Services
             Console.WriteLine("File downloaded");
         }
 
-        public void DecompressFile()
+        private void DecompressFile(DateTime dateTime)
         {
             Console.WriteLine("Decompressing File");
-            string fullDateTime = _dateTime.ToString("yyyyMMdd-HH0000");
-            string fileToDecompress = Path.Combine(_directory, fullDateTime + ".gz");
-            string descompressedFile = Path.Combine(_directory, fullDateTime + ".txt");
+            string fullDateTime = dateTime.ToString("yyyyMMdd-HH0000");
+            string fileToDecompress = Path.Combine(directoryDestinationInfo.FullName, fullDateTime + ".gz");
+            string descompressedFile = Path.Combine(directoryDestinationInfo.FullName, fullDateTime + ".txt");
 
             using (FileStream fInStream = new FileStream(fileToDecompress, FileMode.Open, FileAccess.Read))
             {
@@ -60,6 +64,42 @@ namespace ViewCounter.Services
             if (fileInfo.Exists) fileInfo.Delete();
 
             Console.WriteLine("File decompressed");
+            Console.WriteLine();
+        }
+
+
+        public void DownloadAllFiles()
+        {
+            DateTime currentTime = DateTime.Now;
+            string finalDateTime = currentTime.ToString("yyyyMMdd_HH00");
+            string initialDateTime = currentTime.AddHours(_numberFilesToDownload * -1).ToString("yyyyMMdd_HH00");
+            string directoryDestination = Path.Combine(_baseDirectory, string.Format("Dumps Wikimedia Files {0} to {1}", initialDateTime, finalDateTime));
+
+            directoryDestinationInfo = new DirectoryInfo(directoryDestination);
+            if (!directoryDestinationInfo.Exists || directoryDestinationInfo.EnumerateFiles().ToList().Count != _numberFilesToDownload)
+            {
+                Console.WriteLine("Initialize download files from last " + _numberFilesToDownload + " hours");
+                Console.WriteLine();
+                directoryDestinationInfo.Create();
+                for (int i = 1; i <= _numberFilesToDownload; i++)
+                {
+                    DownloadFile(currentTime);
+                    DecompressFile(currentTime);
+                    currentTime = currentTime.AddHours(-1);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Files already downloaded and decompressed from the last " + _numberFilesToDownload + " hours");
+                Console.WriteLine();
+            }
+        }
+
+        public void DeleteAllFiles()
+        {
+            Console.WriteLine("Deleting all files");
+            if (directoryDestinationInfo.Exists) directoryDestinationInfo.Delete(true);
+            Console.WriteLine("All files was deleted successfully");
             Console.WriteLine();
         }
     }

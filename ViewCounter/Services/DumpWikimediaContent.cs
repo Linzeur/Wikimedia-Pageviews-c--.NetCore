@@ -29,8 +29,9 @@ namespace ViewCounter.Services
 
         public DumpWikimediaContent(DirectoryInfo directory)
         {
-            this._directory = directory;
+            _directory = directory;
         }
+
 
         private void GetMaxViewCountByDomainAndLanguage(int[] sizeColumns, string fullPath, string fileName)
         {
@@ -70,7 +71,6 @@ namespace ViewCounter.Services
             string[] arrDomainCode = domainMaxViewCount.domainCode.Split(".");
             columns[1] = arrDomainCode[0].PadRight(sizeColumns[1]);
             columns[2] =  domainTrailingPart[arrDomainCode[1]].PadRight(sizeColumns[2]);
-
             columns[3] = domainMaxViewCount.viewCount.ToString().PadRight(sizeColumns[3]);
 
             Console.WriteLine(string.Join(" ", columns));
@@ -106,6 +106,7 @@ namespace ViewCounter.Services
 
             Console.WriteLine(string.Join(" ", columns));
         }
+
 
         public void ReportViewCountByLanguageAndDomain()
         {
